@@ -1,0 +1,13 @@
+const {calculate}=require('./model.js');const assert=require('node:assert/strict');
+const cat=(share,base,fee=0)=>({name:String(share)+String(base),share,base,low:base,high:base,fee});
+const run=(budget,monthly,categories,tax=0)=>calculate({budget,monthly,months:12,tax,categories});
+const close=(a,b)=>assert.ok(Math.abs(a-b)<.000001,`${a} != ${b}`);
+let r=run(100000,0,[cat(40,5),cat(35,8),cat(25,12)]);close(r.net,107800);close(r.roi,7.8);close(r.rows.reduce((s,c)=>s+c.contribution,0),r.roi);
+r=run(100000,0,[cat(40,5),cat(35,8),cat(25,12)],20);close(r.net,106240);close(r.roi,6.24);
+r=run(10000,500,[cat(100,0)]);close(r.net,16000);close(r.gain,0);
+r=run(10000,0,[cat(100,-10)],20);close(r.net,9000);close(r.tax,0);
+r=run(10000,0,[cat(100,0,1)]);close(r.net,9900);close(r.cost,100);
+r=run(0,500,[cat(100,0)]);assert.equal(r.balanceGrowth,null);close(r.net,6000);
+for(const share of [99,101])assert.throws(()=>run(10000,0,[cat(share,0)]));assert.throws(()=>run(0,0,[cat(100,0)]));assert.throws(()=>run(NaN,0,[cat(100,0)]));
+r=run(10000,500,[cat(100,-100)]);close(r.net,500);
+const start=performance.now();calculate({budget:100000,monthly:500,months:600,tax:20,categories:Array.from({length:10},(_,i)=>({...cat(10,5),name:'K'+i}))});console.log('All reference calculations passed. 600-month / 10-category calculation:',(performance.now()-start).toFixed(2),'ms');
